@@ -1,0 +1,94 @@
+.full-width-card {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 16px;
+    border-radius: 0; /* Elimina los bordes redondeados */
+    overflow-x: auto; /* Permite que la tabla sea desplazable si es más ancha que la pantalla */
+    overflow-y: auto;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none; /* Para navegadores WebKit como Chrome y Safari */
+    margin: 0; /* Eliminar margen */
+  }
+  
+  input[type=number] {
+    -moz-appearance: textfield; /* Para Firefox */
+    appearance: none; /* Propiedad estándar */
+  }
+  
+  .form-container {
+    width: 100%;
+    max-width: 600px; /* Ancho máximo del formulario */
+    padding: 24px;
+    background-color: #141517; /* Fondo de la tarjeta */
+    border-radius: 20px; /* Igual al contenedor de tabla */
+  }
+  
+  .title {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 16px;
+  }
+  
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .col-sm-12 {
+    width: 100%;
+  }
+  
+  button {
+    padding: 16px;
+    font-size: 16px;
+    background-color: #0f0e0c;
+    font-weight: 500;
+    transition: 0.3s ease; /* Transición suave al hover */
+  }
+  
+  button:hover {
+    background-color: #23211d;
+  }
+  
+  .full-width {
+    width: 100%;
+  }
+  /* Scrollbar general */
+  .mat-select-panel::-webkit-scrollbar {
+    width: 8px; /* Ancho */
+    height: 8px; /* Altura */
+  }
+  
+  /* Fondo del scrollbar */
+  .mat-select-panel::-webkit-scrollbar-track {
+    background: #1e1e1e; /* Fondo oscuro */
+    border-radius: 10px; /* Bordes redondeados */
+  }
+  
+  /* Barra deslizante */
+  .mat-select-panel::-webkit-scrollbar-thumb {
+    background: #00bcd4; /* Color principal */
+    border-radius: 10px; /* Bordes redondeados */
+    border: 2px solid #1e1e1e; /* Borde oscuro */
+  }
+  
+  /* Hover sobre la barra */
+  .mat-select-panel::-webkit-scrollbar-thumb:hover {
+    background: #008ba3; /* Color más oscuro al pasar el ratón */
+  }
+  
+  /* Scrollbar para Firefox */
+  .mat-select-panel {
+    scrollbar-width: thin;
+    scrollbar-color: #00bcd4 #1e1e1e; /* Color del pulgar y el fondo */
+  }

@@ -27,7 +27,15 @@ public class FileRepository implements IRespository {
     @Override
     public void addBook(Book book) {
         try {
-            Files.createDirectories(storageFile.getParent());
+            // Solo creamos el directorio padre si existe y no es la raíz
+            Path parent = storageFile.getParent();
+            System.out.println("Directorio padre: " + parent.toAbsolutePath());
+            if (!Files.exists(parent)) {
+                Files.createDirectories(parent);
+                System.out.println("Directorio creado: " + parent.toAbsolutePath());
+            }
+            System.out.println("Guardando libro: " + book);
+            System.out.println("Ruta del archivo de almacenamiento: " + storageFile.toAbsolutePath());
             mapper.writeValue(storageFile.toFile(), book);
         } catch (IOException e) {
             throw new RuntimeException("Error guardando biblioteca en JSON", e);

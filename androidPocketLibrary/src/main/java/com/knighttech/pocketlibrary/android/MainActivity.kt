@@ -1,40 +1,38 @@
 package com.knighttech.pocketlibrary.android
 
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.knighttech.pocketlibrary.Greeting
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.knighttech.pocketlibrary.android.ui.HomeScreen
+import com.knighttech.pocketlibrary.android.ui.ScanScreen
+import com.knighttech.pocketlibrary.android.ui.BookListScreen
+import com.knighttech.pocketlibrary.android.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MyApplicationTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    GreetingView(Greeting().greet())
+                val navController = rememberNavController()
+                NavHost(navController, startDestination = "home") {
+                    composable("home") {
+                        HomeScreen(
+                            onScanClick  = { navController.navigate("scan") },
+                            onListClick  = { navController.navigate("list") }
+                        )
+                    }
+                    composable("scan") {
+                        ScanScreen(onResult = { /* manejar resultado */ })
+                    }
+                    composable("list") {
+                        BookListScreen()
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun GreetingView(text: String) {
-    Text(text = text)
-}
-
-@Preview
-@Composable
-fun DefaultPreview() {
-    MyApplicationTheme {
-        GreetingView("Hello, Android!")
     }
 }

@@ -48,3 +48,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
+
+
+subprojects {
+    tasks.matching { it.name == "GradleDependencyReportTask" }
+        .configureEach { enabled = false }
+}

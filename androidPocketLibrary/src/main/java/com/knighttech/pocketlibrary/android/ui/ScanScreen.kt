@@ -24,27 +24,36 @@ import java.util.concurrent.Executors
 
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.knighttech.pocketlibrary.books.BookService
+import com.knighttech.pocketlibrary.books.VolumeInfo
+import kotlinx.coroutines.launch
 
-@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
+@OptIn(ExperimentalPermissionsApi::class, androidx.camera.core.ExperimentalGetImage::class)
 @Composable
 fun ScanScreen(onResult: (String) -> Unit) {
-    val context          = LocalContext.current
-    val lifecycleOwner   = LocalLifecycleOwner.current
-    val cameraProviderF  = remember { ProcessCameraProvider.getInstance(context) }
-    val previewView      = remember { PreviewView(context) }
-    val cameraExecutor   = remember { Executors.newSingleThreadExecutor() }
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderF = remember { ProcessCameraProvider.getInstance(context) }
+    val previewView = remember { PreviewView(context) }
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
-    // Estado para el código detectado
+    // Estados
     var detected by remember { mutableStateOf<String?>(null) }
+    var bookInfo by remember { mutableStateOf<VolumeInfo?>(null) }
+    var bookInfo2: String? = null
+    val coroutineScope = rememberCoroutineScope()
+    val bookService = remember { BookService() }
 
-    // 1. Permiso de cámara
+    // Permiso de cámara
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     LaunchedEffect(Unit) {
         if (!cameraPermissionState.status.isGranted) {
@@ -52,56 +61,68 @@ fun ScanScreen(onResult: (String) -> Unit) {
         }
     }
 
-    // 2. Cuando nos conceden permiso, arrancamos cámara
+    // Inicializar cámara cuando se concede permiso
     if (cameraPermissionState.status.isGranted) {
         LaunchedEffect(cameraProviderF) {
             val cameraProvider = cameraProviderF.get()
 
-            // Preview
-            val preview = Preview.Builder()
+            val previewUseCase = Preview.Builder()
                 .build()
                 .also { it.setSurfaceProvider(previewView.surfaceProvider) }
 
-            // Análisis de imagen para ML Kit
             val analysisUseCase = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also { it.setAnalyzer(cameraExecutor) { imageProxy ->
-                    val mediaImage = imageProxy.image
-                    if (mediaImage != null) {
-                        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                        BarcodeScanning.getClient()
-                            .process(image)
-                            .addOnSuccessListener { barcodes ->
-                                barcodes.firstOrNull()?.rawValue?.let { code ->
-                                    if (code != detected) {
-                                        detected = code
-                                        onResult(code)
+                    try {
+                        val mediaImage = imageProxy.image
+                        if (mediaImage != null) {
+                            val input = InputImage.fromMediaImage(
+                                mediaImage,
+                                imageProxy.imageInfo.rotationDegrees
+                            )
+                            BarcodeScanning.getClient()
+                                .process(input)
+                                .addOnSuccessListener { barcodes ->
+                                    barcodes.firstOrNull()?.rawValue?.let { code ->
+                                        if (code != detected) {
+                                            detected = code
+                                            onResult(code)
+                                            // Fetch book info
+                                            coroutineScope.launch {
+                                                try {
+                                                    bookInfo2 = bookService.fetchByIsbn(code)
+                                                } catch (e: Exception) {
+                                                    Log.e("ScanScreen", "Error fetching book info: $e")
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e("ScanScreen", "Error leyendo código: $e")
-                            }
-                            .addOnCompleteListener {
-                                imageProxy.close()
-                            }
-                    } else {
+                                .addOnFailureListener { e ->
+                                    Log.e("ScanScreen", "Error leyendo código: $e")
+                                }
+                                .addOnCompleteListener {
+                                    imageProxy.close()
+                                }
+                        } else {
+                            imageProxy.close()
+                        }
+                    } catch (e: Exception) {
                         imageProxy.close()
+                        Log.e("ScanScreen", "Analysis error: $e")
                     }
                 }}
 
-            // Unbind antiguo y bind nuevo
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
-                preview,
+                previewUseCase,
                 analysisUseCase
             )
         }
     } else {
-        // Si no hay permiso, avisamos
         Box(Modifier.fillMaxSize()) {
             Text(
                 "Se necesita permiso de cámara\ny reinicia la pantalla.",
@@ -111,19 +132,30 @@ fun ScanScreen(onResult: (String) -> Unit) {
         }
     }
 
-    // 3. UI: vista previa + texto de resultado
+    // UI: vista previa, código detectado y datos del libro
     Box(Modifier.fillMaxSize()) {
         AndroidView(
-            factory  = { previewView },
+            factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
-        detected?.let { code ->
-            Text(
-                text = "Detectado: $code",
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            )
+        Column(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            //detected?.let { code ->
+            //    Text("ISBN: $code", style = MaterialTheme.typography.bodyLarge)
+            //}
+            bookInfo?.let { info ->
+                Text("Título: ${info.title}", style = MaterialTheme.typography.titleMedium)
+                Text("Autor: ${info.authors.joinToString()}", style = MaterialTheme.typography.bodyMedium)
+                info.publisher?.let {
+                    Text("Editorial: $it", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
         }
     }
 }
